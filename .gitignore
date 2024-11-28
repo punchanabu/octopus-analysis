@@ -1,0 +1,10 @@
+# Ignore data files
+data/*
+
+# Ignore all log files
+*.log
+*.err
+*.out
+
+# Ignore python cache files
+__pycache__/

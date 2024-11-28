@@ -1,0 +1,6 @@
+setup.py
+config/__init__.py
+octopus_analysis.egg-info/PKG-INFO
+octopus_analysis.egg-info/SOURCES.txt
+octopus_analysis.egg-info/dependency_links.txt
+octopus_analysis.egg-info/top_level.txt
