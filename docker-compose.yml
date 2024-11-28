@@ -1,15 +1,6 @@
 version: '3.8'
 
 services:
-  airflow:
-    image: apache/airflow:2.7.1
-    environment:
-      - PYTHONPATH=/opt/airflow/project
-    volumes:
-      - .:/opt/airflow/project
-    depends_on:
-      - postgres
-      
   kafka:
     image: confluentinc/cp-kafka:7.3.0
     environment:
@@ -29,15 +20,6 @@ services:
       - "9042:9042"
     volumes:
       - cassandra_data:/var/lib/cassandra
-      
-  postgres:
-    image: postgres:15
-    environment:
-      - POSTGRES_USER=airflow
-      - POSTGRES_PASSWORD=airflow
-      - POSTGRES_DB=airflow
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
 
 volumes:
   cassandra_data:

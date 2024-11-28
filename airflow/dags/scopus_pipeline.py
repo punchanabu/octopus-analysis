@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.python import PythonOperator
-from tasks import load_scopus_data, scrape_data, produce_to_kafka, run_spark_job
 import os
 import sys
 from pathlib import Path
@@ -18,6 +17,24 @@ default_args = {
     'retry_delay': timedelta(minutes=5)
 }
 
+def load_scopus_data(**context):
+    from src.data.scopus_loader import ScopusLoader
+    loader = ScopusLoader()
+    data = loader.load_data()
+    return "Scopus data loaded successfully"
+
+def produce_to_kafka(**context):
+    from src.kafka.producer import ScopusProducer
+    producer = ScopusProducer()
+    producer.send_data({"test": "data"})
+    return "Data sent to Kafka"
+
+def run_spark_job(**context):
+    from src.spark.streaming import SparkStreamingJob
+    spark_job = SparkStreamingJob()
+    spark_job.start_streaming()
+    return "Spark job completed"
+
 dag = DAG(
     'scopus_analysis_pipeline',
     default_args=default_args,
@@ -32,21 +49,15 @@ t1 = PythonOperator(
 )
 
 t2 = PythonOperator(
-    task_id='scrape_data',
-    python_callable=scrape_data,
-    dag=dag
-)
-
-t3 = PythonOperator(
     task_id='produce_to_kafka',
     python_callable=produce_to_kafka,
     dag=dag
 )
 
-t4 = PythonOperator(
+t3 = PythonOperator(
     task_id='run_spark_job',
     python_callable=run_spark_job,
     dag=dag
 )
 
-t1 >> t2 >> t3 >> t4
+t1 >> t2 >> t3
