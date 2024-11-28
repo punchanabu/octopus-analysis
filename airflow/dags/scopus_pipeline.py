@@ -1,36 +1,14 @@
 from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.python import PythonOperator
+from tasks import load_scopus_data, scrape_data, produce_to_kafka, run_spark_job
 import os
 import sys
 from pathlib import Path
 
+
 project_root = Path(__file__).parent.parent
 sys.path.append(str(project_root))
-
-def load_scopus_data(**context):
-    from src.data.scopus_loader import ScopusLoader
-    loader = ScopusLoader()
-    data = loader.load_data()
-    return "Scopus data loaded successfully"
-
-def scrape_data(**context):
-    from src.data.scraper import DataScraper
-    scraper = DataScraper()
-    data = scraper.scrape()
-    return "Data scraped successfully"
-
-def produce_to_kafka(**context):
-    from src.kafka.producer import ScopusProducer
-    producer = ScopusProducer()
-    producer.send_data({"test": "data"})
-    return "Data sent to Kafka"
-
-def run_spark_job(**context):
-    from src.spark.streaming import SparkStreamingJob
-    spark_job = SparkStreamingJob()
-    spark_job.start_streaming()
-    return "Spark job completed"
 
 default_args = {
     'owner': 'airflow',
