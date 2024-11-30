@@ -1,5 +1,5 @@
 import json
-from typing import Dict, List, Any, Generator, Iterator
+from typing import Dict, List, Generator, Iterator
 from pathlib import Path
 from src.utils.logger import setup_logger
 
@@ -29,37 +29,34 @@ class StreamingScopusLoader:
                         yield file_path
                         
     def stream_records(self, file_path: Path) -> Iterator[Dict]:
-        """
-        Streams records from a single file using json streaming parser.
-        This will avoid loading the actual entire file in the memory ?
-        """
         try:
             with open(file_path, 'r', encoding='utf-8') as file:
-                # Trying to read opening bracket '{'
+                # Read and include the initial '{' in the buffer
                 char = file.read(1)
-                if not char == '{':
+                if char != '{':
                     raise ValueError(f"Expected '{{' at start of file, got {char}")
                 
-                buffer = ""
+                buffer = char
                 bracket_count = 1
                 
-                # Stream the character by character
-                while char:
+                while True:
                     char = file.read(1)
-                    if not char: # Check for EOF
+                    if not char:
                         break
                     buffer += char
-                    if char == "{":
+                    if char == '{':
                         bracket_count += 1
-                    elif char == "}":
+                    elif char == '}':
                         bracket_count -= 1
-                        
+                    
                     if bracket_count == 0:
                         try:
                             yield json.loads(buffer)
                         except json.JSONDecodeError as e:
                             logger.error(f"Error decoding JSON from: {file_path}: {str(e)}")
-                            
+                        # Reset buffer and bracket count for the next record
+                        buffer = ''
+                        bracket_count = 0
         except Exception as e:
             logger.error(f"Error reading file: {file_path}: {str(e)}")
             raise
