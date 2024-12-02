@@ -1,4 +1,4 @@
-# Octopus Analysis
+# 🐙 Octopus Analysis 🐙
 
 Octopus Analysis is a data analysis project designed to process and analyze Scopus data using Apache Spark.
 
