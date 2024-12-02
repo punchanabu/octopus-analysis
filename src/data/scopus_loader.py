@@ -2,11 +2,12 @@ import json
 from typing import Dict, List, Generator, Iterator
 from pathlib import Path
 from src.utils.logger import setup_logger
+from concurrent.futures import ThreadPoolExecutor
 
 logger = setup_logger(__name__)
 
 class StreamingScopusLoader:
-    def __init__(self, base_path: str = "data/scopus", chunk_size: int = 1000):
+    def __init__(self, base_path: str = "/Users/punpun/Documents/Personal/cedt/dsde-project/octopus-analysis/data/scopus", chunk_size: int = 1000):
         """
         Initialize the streaming loader with configurable chunk size.
         
@@ -29,6 +30,9 @@ class StreamingScopusLoader:
                         yield file_path
                         
     def stream_records(self, file_path: Path) -> Iterator[Dict]:
+        if file_path.stat().st_size == 0:  # Check for empty file
+            logger.warning(f"Skipping empty file: {file_path}")
+            return
         try:
             with open(file_path, 'r', encoding='utf-8') as file:
                 # Read and include the initial '{' in the buffer
@@ -83,3 +87,4 @@ class StreamingScopusLoader:
         if current_chunk:
             logger.info(f"Yielding last chunk of size: {len(current_chunk)}")
             yield current_chunk
+            

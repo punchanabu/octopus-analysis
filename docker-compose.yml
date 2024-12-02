@@ -1,19 +1,6 @@
 version: '3.8'
-
+# Local Cassandra instance for development
 services:
-  kafka:
-    image: confluentinc/cp-kafka:7.3.0
-    environment:
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
-      
-  spark:
-    image: bitnami/spark:3.4
-    environment:
-      - SPARK_MODE=master
-    ports:
-      - "8080:8080"
-      
   cassandra:
     image: cassandra:4.1
     ports:
@@ -23,4 +10,3 @@ services:
 
 volumes:
   cassandra_data:
-  postgres_data:
