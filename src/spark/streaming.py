@@ -13,8 +13,6 @@ class ScopusProcessor:
         
         db_host = os.getenv("DB_HOST", "localhost")
         db_port = os.getenv("DB_PORT", "9042")
-        db_cluster = os.getenv("DB_CLUSTER", "localhost")
-        
         self.spark = SparkSession.builder \
             .appName("ScopusAnalysis") \
             .config("spark.jars.packages", "com.datastax.spark:spark-cassandra-connector_2.12:3.4.0") \
@@ -24,7 +22,7 @@ class ScopusProcessor:
             .config("spark.executor.memory", "4g") \
             .getOrCreate()
             
-        cluster = Cluster([db_cluster])
+        cluster = Cluster([db_host])
         session = cluster.connect()
 
         session.execute("""

@@ -29,7 +29,6 @@ Octopus Analysis is a data analysis project designed to process and analyze Scop
    ```
    DB_HOST=localhost
    DB_PORT=9042
-   DB_CLUSTER="localhost"
    # path to your scopus data
    SCOPUS_DATA_PATH="/Users/punpun/Documents/Personal/cedt/dsde-project/octopus-analysis/data/scopus"
    ```
@@ -54,6 +53,5 @@ The application uses environment variables for configuration. Create a `.env` fi
 ```env
 DB_HOST="cassandra-host"
 DB_PORT="cassandra-port"
-DB_CLUSTER="cassandra-cluster"
 SCOPUS_DATA_PATH="/Users/punpun/Documents/Personal/cedt/dsde-project/octopus-analysis/data/scopus"
 ```
