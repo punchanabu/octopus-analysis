@@ -1,5 +1,5 @@
 # Ignore data files
-data/*
+data/scopus/*
 
 # Ignore all log files
 *.log
