@@ -11,16 +11,20 @@ logger = setup_logger(__name__)
 class ScopusProcessor:
     def __init__(self):
         
+        db_host = os.getenv("DB_HOST", "localhost")
+        db_port = os.getenv("DB_PORT", "9042")
+        db_cluster = os.getenv("DB_CLUSTER", "localhost")
+        
         self.spark = SparkSession.builder \
             .appName("ScopusAnalysis") \
             .config("spark.jars.packages", "com.datastax.spark:spark-cassandra-connector_2.12:3.4.0") \
-            .config("spark.cassandra.connection.host", "localhost") \
-            .config("spark.cassandra.connection.port", "9042") \
+            .config("spark.cassandra.connection.host", db_host) \
+            .config("spark.cassandra.connection.port", db_port) \
             .config("spark.driver.memory", "4g") \
             .config("spark.executor.memory", "4g") \
             .getOrCreate()
             
-        cluster = Cluster(['localhost'])
+        cluster = Cluster([db_cluster])
         session = cluster.connect()
 
         session.execute("""
@@ -62,6 +66,7 @@ class ScopusProcessor:
         session.shutdown()
 
         self.loader = StreamingScopusLoader(chunk_size=1000)
+        self.loader.rename_files_to_json()
 
 
     def process_chunk(self, chunk):

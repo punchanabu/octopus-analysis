@@ -2,7 +2,7 @@ import json
 from typing import Dict, List, Generator, Iterator
 from pathlib import Path
 from src.utils.logger import setup_logger
-from concurrent.futures import ThreadPoolExecutor
+from dotenv import load_dotenv
 
 logger = setup_logger(__name__)
 
@@ -17,7 +17,23 @@ class StreamingScopusLoader:
         """
         self.base_path = Path(base_path)
         self.chunk_size = chunk_size
-        
+    
+    def rename_files_to_json(self):
+        """
+        Rename all files in the directory to have a `.json` extension.
+        """
+        for year_dir in self.base_path.iterdir():
+            if year_dir.is_dir():
+                for file_path in year_dir.iterdir():
+                    if file_path.is_file() and not file_path.suffix == ".json":
+                        new_name = file_path.with_suffix('.json')
+                        try:
+                            file_path.rename(new_name)
+                            logger.info(f"Renamed {file_path} to {new_name}")
+                        except Exception as e:
+                            logger.error(f"Failed to rename {file_path}: {str(e)}")
+                            raise
+
     def stream_files(self) -> Generator[Path, None, None]:
         """
         Yield files path one at a time instead of loading all paths into memory.
@@ -87,4 +103,4 @@ class StreamingScopusLoader:
         if current_chunk:
             logger.info(f"Yielding last chunk of size: {len(current_chunk)}")
             yield current_chunk
-            
+            logger.info(f"Loaded environment variable EXAMPLE_VAR: {example_var}")
