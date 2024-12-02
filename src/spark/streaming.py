@@ -1,6 +1,6 @@
 from pyspark.sql import SparkSession
-from pyspark.sql.types import StructType, StructField, StringType, IntegerType, ArrayType
-from src.data.scopus_loader import StreamingScopusLoader
+from pyspark.sql.types import IntegerType
+from src.ingestion.scopus_loader import StreamingScopusLoader
 from pyspark.sql.functions import col, explode_outer, to_date, concat_ws
 from src.utils.logger import setup_logger
 from cassandra.cluster import Cluster
