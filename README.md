@@ -7,7 +7,6 @@ Octopus Analysis is a data analysis project designed to process and analyze Scop
 - [Installation](#installation)
 - [Usage](#usage)
 - [Configuration](#configuration)
-
 ## Installation
 
 1. **Clone the Repository**:
@@ -22,6 +21,18 @@ Octopus Analysis is a data analysis project designed to process and analyze Scop
    ```
 3. **Add data**
   Copy paste your `scopus` data folder into the `/data/` directory
+4. **Optional ( If you want to develop on local )**
+   ```bash
+   docker compose up -d
+   ```
+   and use this .env
+   ```
+   DB_HOST=localhost
+   DB_PORT=9042
+   DB_CLUSTER="localhost"
+   # path to your scopus data
+   SCOPUS_DATA_PATH="/Users/punpun/Documents/Personal/cedt/dsde-project/octopus-analysis/data/scopus"
+   ```
 
 ## Usage
 
