@@ -144,6 +144,3 @@ class ScopusProcessor:
             self.spark.stop()
 
 
-if __name__ == "__main__":
-    processor = ScopusProcessor()
-    processor.run()
