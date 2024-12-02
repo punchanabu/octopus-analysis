@@ -2,12 +2,11 @@ import json
 from typing import Dict, List, Generator, Iterator
 from pathlib import Path
 from src.utils.logger import setup_logger
-from dotenv import load_dotenv
-
+import os
 logger = setup_logger(__name__)
 
 class StreamingScopusLoader:
-    def __init__(self, base_path: str = "/Users/punpun/Documents/Personal/cedt/dsde-project/octopus-analysis/data/scopus", chunk_size: int = 1000):
+    def __init__(self, base_path: str = None, chunk_size: int = 1000):
         """
         Initialize the streaming loader with configurable chunk size.
         
@@ -15,7 +14,8 @@ class StreamingScopusLoader:
             base_path: Path to the scopus data directory
             chunk_size: Number of records to yield in each batch
         """
-        self.base_path = Path(base_path)
+
+        self.base_path = self.base_path = Path(base_path or os.getenv("SCOPUS_BASE_PATH", "./data/scopus"))
         self.chunk_size = chunk_size
     
     def rename_files_to_json(self):
@@ -103,4 +103,3 @@ class StreamingScopusLoader:
         if current_chunk:
             logger.info(f"Yielding last chunk of size: {len(current_chunk)}")
             yield current_chunk
-            logger.info(f"Loaded environment variable EXAMPLE_VAR: {example_var}")
