@@ -1,11 +1,12 @@
-from pyspark.sql import SparkSession
-from pyspark.sql.types import IntegerType
-from src.ingestion.scopus_loader import StreamingScopusLoader
-from pyspark.sql.functions import col, explode_outer, to_date, concat_ws
-from src.utils.logger import setup_logger
-from cassandra.cluster import Cluster
-import json
 import os
+
+import orjson as json
+from cassandra.cluster import Cluster
+from pyspark.sql import SparkSession
+from src.ingestion.scopus_loader import StreamingScopusLoader
+from src.spark.transform import ScopusTransformer
+from src.utils.logger import setup_logger
+
 logger = setup_logger(__name__)
 
 class ScopusProcessor:
@@ -18,12 +19,13 @@ class ScopusProcessor:
             .config("spark.jars.packages", "com.datastax.spark:spark-cassandra-connector_2.12:3.4.0") \
             .config("spark.cassandra.connection.host", db_host) \
             .config("spark.cassandra.connection.port", db_port) \
-            .config("spark.driver.memory", "4g") \
-            .config("spark.executor.memory", "4g") \
+            .config("spark.driver.memory", "8g") \
+            .config("spark.executor.memory", "8g") \
             .getOrCreate()
             
         cluster = Cluster([db_host])
         session = cluster.connect()
+        self.transformer = ScopusTransformer()
 
         session.execute("""
             CREATE KEYSPACE IF NOT EXISTS scopus_data
@@ -70,49 +72,14 @@ class ScopusProcessor:
     def process_chunk(self, chunk):
         try:
             # Convert each record to JSON string
-            json_strings = [json.dumps(record) for record in chunk]
+            json_strings = [json.dumps(record).decode() for record in chunk]
             # Create an RDD from the JSON strings
             rdd = self.spark.sparkContext.parallelize(json_strings)
             # Read JSON data into DataFrame with inferred schema
             df = self.spark.read.json(rdd)
     
             # Transform data
-            transformed_df = df.select(
-                col("abstracts-retrieval-response.coredata.prism:doi").alias("doi"),
-                col("abstracts-retrieval-response.coredata.dc:title").alias("title"),
-                col("abstracts-retrieval-response.coredata.dc:description").alias("abstract"),
-                col("abstracts-retrieval-response.coredata.subtypeDescription").alias("document_type"),
-                col("abstracts-retrieval-response.coredata.prism:aggregationType").alias("source_type"),
-                to_date(col("abstracts-retrieval-response.coredata.prism:coverDate")).alias("publication_date"),
-                col("abstracts-retrieval-response.coredata.prism:publicationName").alias("source_title"),
-                col("abstracts-retrieval-response.coredata.dc:publisher").alias("publisher"),
-                col("abstracts-retrieval-response.authkeywords.author-keyword").alias("author_keywords"),
-                explode_outer(col("abstracts-retrieval-response.subject-areas.subject-area")).alias("subject_area"),
-                col("abstracts-retrieval-response.coredata.citedby-count").cast(IntegerType()).alias("cited_by"),
-                col("abstracts-retrieval-response.coredata.openaccess").cast(IntegerType()).alias("open_access"),
-                col("abstracts-retrieval-response.language.@xml:lang").alias("language"),
-                col("abstracts-retrieval-response.item.ait:process-info.ait:status.@state").alias("status_state"),
-                col("abstracts-retrieval-response.item.bibrecord.tail.bibliography.@refcount").cast(IntegerType()).alias("ref_count"),
-                concat_ws("-", 
-                    col("abstracts-retrieval-response.item.ait:process-info.ait:date-delivered.@year"),
-                    col("abstracts-retrieval-response.item.ait:process-info.ait:date-delivered.@month"),
-                    col("abstracts-retrieval-response.item.ait:process-info.ait:date-delivered.@day")
-                ).alias("delivered_date"),
-                col("abstracts-retrieval-response.affiliation").alias("affiliation"),
-                explode_outer(col("abstracts-retrieval-response.authors.author")).alias("author_details"),
-                col("abstracts-retrieval-response.item.xocs:meta.xocs:funding-list").alias("funding_details"),
-            ).select(
-                "*",
-                col("subject_area.@code").alias("subject_code"),
-                col("subject_area.@abbrev").alias("subject_abbrev"),
-                col("subject_area.$").alias("subject_name"),
-                col("author_details.preferred-name.ce:given-name").alias("author_given_name"),
-                col("author_details.preferred-name.ce:surname").alias("author_surname"),
-                col("author_details.author-url").alias("author_url"),
-                col("author_details.affiliation").alias("author_affiliation")
-            )
-    
-            transformed_df = transformed_df.filter(col("doi").isNotNull())
+            transformed_df = self.transformer.apply_all_transforms(df)
     
             # Write to Cassandra
             transformed_df.write \

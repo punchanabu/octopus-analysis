@@ -1,8 +1,9 @@
-import json
+import orjson as json
 from typing import Dict, List, Generator, Iterator
 from pathlib import Path
 from src.utils.logger import setup_logger
 import os
+import time
 logger = setup_logger(__name__)
 
 class StreamingScopusLoader:
@@ -50,7 +51,7 @@ class StreamingScopusLoader:
             logger.warning(f"Skipping empty file: {file_path}")
             return
         try:
-            with open(file_path, 'r', encoding='utf-8') as file:
+            with open(file_path, 'r', encoding='utf-8', buffering=1024*1024) as file:
                 # Read and include the initial '{' in the buffer
                 char = file.read(1)
                 if char != '{':
