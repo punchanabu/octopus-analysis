@@ -14,18 +14,25 @@ class ScopusProcessor:
         
         db_host = os.getenv("DB_HOST", "localhost")
         db_port = os.getenv("DB_PORT", "9042")
-        self.spark = SparkSession.builder \
-            .appName("ScopusAnalysis") \
-            .config("spark.jars.packages", "com.datastax.spark:spark-cassandra-connector_2.12:3.4.0") \
-            .config("spark.cassandra.connection.host", db_host) \
-            .config("spark.cassandra.connection.port", db_port) \
-            .config("spark.driver.memory", "8g") \
-            .config("spark.executor.memory", "8g") \
-            .getOrCreate()
+        configs = {
+            "spark.jars.packages": "com.datastax.spark:spark-cassandra-connector_2.12:3.4.0",
+            "spark.cassandra.connection.host": db_host,
+            "spark.cassandra.connection.port": db_port,
+            "spark.driver.memory": "8g",
+            "spark.executor.memory": "8g",
+            "spark.sql.shuffle.partitions": "100",
+            "spark.default.parallelism": "100",
+        }
+        self.spark = SparkSession.builder.appName("ScopusAnalysis")
+
+        for key, value in configs.items():
+            self.spark = self.spark.config(key, value)
+        self.spark = self.spark.getOrCreate()
             
         cluster = Cluster([db_host])
         session = cluster.connect()
         self.transformer = ScopusTransformer()
+        self.chunk_size = 1000
 
         session.execute("""
             CREATE KEYSPACE IF NOT EXISTS scopus_data
@@ -65,7 +72,7 @@ class ScopusProcessor:
 
         session.shutdown()
 
-        self.loader = StreamingScopusLoader(chunk_size=1000)
+        self.loader = StreamingScopusLoader(chunk_size=self.chunk_size)
         self.loader.rename_files_to_json()
 
 
@@ -112,5 +119,3 @@ class ScopusProcessor:
 
         finally:
             self.spark.stop()
-
-
