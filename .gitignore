@@ -10,3 +10,4 @@ data/scopus/*
 __pycache__/
 
 .env
+data/**
