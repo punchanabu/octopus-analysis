@@ -3,7 +3,6 @@ from typing import Dict, List, Generator, Iterator
 from pathlib import Path
 from src.utils.logger import setup_logger
 import os
-import time
 logger = setup_logger(__name__)
 
 class StreamingScopusLoader:

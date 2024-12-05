@@ -3,15 +3,14 @@ import os
 import orjson as json
 from cassandra.cluster import Cluster
 from pyspark.sql import SparkSession
-from src.ingestion.scopus_loader import StreamingScopusLoader
-from src.spark.transform.scopus_transform import ScopusTransformer
+from src.ingestion.scrape_loader import ScrapeDataLoader
+from src.spark.transform.scraped_tranform import ScrapedDataTransformer
 from src.utils.logger import setup_logger
 
 logger = setup_logger(__name__)
 
-class ScopusProcessor:
+class ScrapeStreamingProcessor:
     def __init__(self):
-        
         db_host = os.getenv("DB_HOST", "localhost")
         db_port = os.getenv("DB_PORT", "9042")
         configs = {
@@ -23,17 +22,16 @@ class ScopusProcessor:
             "spark.sql.shuffle.partitions": "100",
             "spark.default.parallelism": "100",
         }
-        self.spark = SparkSession.builder.appName("ScopusAnalysis")
+        self.spark = SparkSession.builder.appName("ScrapeScopusAnalysis")
 
         for key, value in configs.items():
             self.spark = self.spark.config(key, value)
         self.spark = self.spark.getOrCreate()
-            
+
         cluster = Cluster([db_host])
         session = cluster.connect()
-        self.transformer = ScopusTransformer()
-        self.chunk_size = 1000
 
+        # Ensures the table exists
         session.execute("""
             CREATE KEYSPACE IF NOT EXISTS scopus_data
             WITH replication = {'class': 'SimpleStrategy', 'replication_factor': '1'}
@@ -72,9 +70,9 @@ class ScopusProcessor:
 
         session.shutdown()
 
-        self.loader = StreamingScopusLoader(chunk_size=self.chunk_size)
-        self.loader.rename_files_to_json()
-
+        # Use ScrapeDataLoader and ScrapedDataTransformer for the scrape data
+        self.loader = ScrapeDataLoader(chunk_size=1000)
+        self.transformer = ScrapedDataTransformer()
 
     def process_chunk(self, chunk):
         try:
@@ -84,10 +82,10 @@ class ScopusProcessor:
             rdd = self.spark.sparkContext.parallelize(json_strings)
             # Read JSON data into DataFrame with inferred schema
             df = self.spark.read.json(rdd)
-    
+
             # Transform data
             transformed_df = self.transformer.apply_all_transforms(df)
-    
+
             # Write to Cassandra
             transformed_df.write \
                 .format("org.apache.spark.sql.cassandra") \
@@ -96,17 +94,16 @@ class ScopusProcessor:
                 .save()
 
             transformed_df.unpersist()
-            
+
             logger.info("Successfully wrote chunk to Cassandra")
-    
+
         except Exception as e:
-            logger.error(f"Error processing chunk: {str(e)}")# Log first record in the chunk for debugging
+            logger.error(f"Error processing chunk: {str(e)}")
             raise
-        
-        
+
     def run(self):
         try:
-            logger.info("Starting data processing pipeline...")
+            logger.info("Starting scraped data processing pipeline...")
 
             for chunk in self.loader.process_data():
                 self.process_chunk(chunk)
