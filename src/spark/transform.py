@@ -83,5 +83,19 @@ class ScopusTransformer:
             col("author_details.author-url").alias("author_url"),
             col("author_details.affiliation").alias("author_affiliation"),
         )
-
-        return df.filter(col("doi").isNotNull())
+        
+        """
+        Apply the condition that we need only 
+        (confer, proceed) and (not confer, not proceed) 
+        """
+        conference_and_proceed = (
+            (col("document_type") == "Conference Paper")
+            & (col("source_type") == "Conference Proceeding")
+        )
+        
+        not_conference_and_not_proceed = (
+            (col("document_type") != "Conference Paper")
+            & (col("source_type") != "Conference Proceeding")
+        )
+        
+        return df.filter(col("doi").isNotNull() & (conference_and_proceed | not_conference_and_not_proceed))
