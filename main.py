@@ -12,8 +12,8 @@ if __name__ == "__main__":
     if not db_host:
         raise EnvironmentError("Environment variables not loaded properly!")
     # Process Ajarn data
-    # processor = ScopusProcessor()
-    # processor.run()
+    processor = ScopusProcessor()
+    processor.run()
     # Process Scrape data
     processor = ScopusScraperProcessor()
     processor.run()
